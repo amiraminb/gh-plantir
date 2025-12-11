@@ -1,0 +1,9 @@
+# Binary
+plantir
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
