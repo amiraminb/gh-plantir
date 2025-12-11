@@ -7,29 +7,53 @@ import (
 	"time"
 )
 
-const query = `
-  query {
-    search(query: "is:pr is:open review-requested:@me", type: ISSUE, first: 100) {
-      nodes {
-        ... on PullRequest {
-          number
-          title
-          url
-          isDraft
-          createdAt
-          author { login }
-          repository {
-            name
-            owner { login }
-          }
-          labels(first: 10) {
-            nodes { name }
-          }
+const reviewRequestQuery = `
+query {
+  search(query: "is:pr is:open review-requested:@me", type: ISSUE, first: 100) {
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        isDraft
+        createdAt
+        author { login }
+        repository {
+          name
+          owner { login }
+        }
+        labels(first: 10) {
+          nodes { name }
         }
       }
     }
   }
-  `
+}
+`
+
+const mentionsQuery = `
+query {
+  search(query: "is:pr is:open (mentions:@me OR commenter:@me) -author:@me", type: ISSUE, first: 100) {
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        isDraft
+        createdAt
+        author { login }
+        repository {
+          name
+          owner { login }
+        }
+        labels(first: 10) {
+          nodes { name }
+        }
+      }
+    }
+  }
+}
+`
 
 type graphQLResponse struct {
 	Data struct {
@@ -60,6 +84,14 @@ type graphQLResponse struct {
 }
 
 func FetchReviewRequests() ([]PR, error) {
+	return fetchPRs(reviewRequestQuery)
+}
+
+func FetchMentions() ([]PR, error) {
+	return fetchPRs(mentionsQuery)
+}
+
+func fetchPRs(query string) ([]PR, error) {
 	cmd := exec.Command("gh", "api", "graphql", "-f", fmt.Sprintf("query=%s", query))
 	output, err := cmd.Output()
 	if err != nil {
