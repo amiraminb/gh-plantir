@@ -36,6 +36,7 @@ go build -o plantir .
 ```
 
 ## Usage
+Few usecases. For more look at `plantir -h`
 
 ```bash
 # List PRs awaiting your review (max 20, newest first)
@@ -68,20 +69,3 @@ plantir open 1234
 plantir stats
 ```
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `list` | List PRs where you're requested as reviewer |
-| `open <PR#>` | Open a PR in your browser |
-| `stats` | Show summary statistics by repo and type |
-
-## Flags for `list`
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--repo` | `-r` | Filter by repository name |
-| `--type` | `-t` | Filter by PR type (feature, dependabot, bot) |
-| `--stale` | `-s` | Only show PRs older than N days |
-| `--limit` | `-n` | Max PRs to show (default: 20, 0 for unlimited) |
-| `--json` | | Output as JSON |
