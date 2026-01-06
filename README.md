@@ -42,12 +42,18 @@ Few usecases. For more look at `plantir -h`
 # List PRs awaiting your review (max 20, newest first)
 plantir list
 
+# Show only PRs waiting for your response (pending review)
+plantir list -p
+
 # Filter by repository
 plantir list --repo=auth
 
 # Filter by type (feature, dependabot, bot)
 plantir list --type=feature
 plantir list --type=dependabot
+
+# Show PRs assigned to a team
+plantir list --team=org/team-name
 
 # Show only stale PRs (older than N days)
 plantir list --stale=7

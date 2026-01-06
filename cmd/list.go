@@ -18,6 +18,7 @@ var (
 	staleFlag    int
 	reviewedFlag bool
 	pendingFlag  bool
+	teamFlag     string
 )
 
 var listCmd = &cobra.Command{
@@ -34,7 +35,11 @@ var listCmd = &cobra.Command{
 			return
 		}
 
-		if reviewedFlag {
+		if teamFlag != "" {
+			prs, err = github.FetchTeamReviewRequests(teamFlag)
+			emptyMsg = fmt.Sprintf("✨ No PRs waiting for team %s!", teamFlag)
+			headerMsg = fmt.Sprintf("👥 PRs waiting for team %s...", teamFlag)
+		} else if reviewedFlag {
 			prs, err = github.FetchReviewed()
 			emptyMsg = "✨ No PRs you've reviewed!"
 			headerMsg = "👀 PRs you've reviewed..."
@@ -104,4 +109,5 @@ func init() {
 	listCmd.Flags().IntVarP(&staleFlag, "stale", "s", 0, "Only show PRs older than N days")
 	listCmd.Flags().BoolVarP(&pendingFlag, "pending", "p", false, "Show only PRs waiting for your review")
 	listCmd.Flags().BoolVar(&reviewedFlag, "reviewed", false, "Show only PRs you've already reviewed")
+	listCmd.Flags().StringVar(&teamFlag, "team", "", "Show PRs waiting for a team's review (format: org/team)")
 }

@@ -81,6 +81,32 @@ query {
 }
 `
 
+func teamReviewRequestQuery(team string) string {
+	return fmt.Sprintf(`
+query {
+  search(query: "is:pr is:open team-review-requested:%s", type: ISSUE, first: 100) {
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        isDraft
+        createdAt
+        author { login }
+        repository {
+          name
+          owner { login }
+        }
+        labels(first: 10) {
+          nodes { name }
+        }
+      }
+    }
+  }
+}
+`, team)
+}
+
 const mentionsQuery = `
 query {
   search(query: "is:pr is:open (mentions:@me OR commenter:@me) -author:@me", type: ISSUE, first: 100) {
@@ -142,6 +168,11 @@ type graphQLResponse struct {
 
 func FetchReviewRequests() ([]PR, error) {
 	return fetchPRs(reviewRequestQuery, true)
+}
+
+func FetchTeamReviewRequests(team string) ([]PR, error) {
+	query := teamReviewRequestQuery(team)
+	return fetchPRs(query, false)
 }
 
 func FetchMentions() ([]PR, error) {
