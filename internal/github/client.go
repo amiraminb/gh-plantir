@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -172,6 +173,96 @@ func FetchReviewRequests() ([]PR, error) {
 
 func FetchTeamReviewRequests(team string) ([]PR, error) {
 	query := teamReviewRequestQuery(team)
+	return fetchPRs(query, false)
+}
+
+func FetchTeamAll(team string) ([]PR, error) {
+	pending, err := FetchTeamReviewRequests(team)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := getTeamMembers(team)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get team members: %w", err)
+	}
+
+	reviewed, err := fetchTeamReviewed(members)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := make(map[int]bool)
+	var all []PR
+	for _, pr := range pending {
+		if !seen[pr.Number] {
+			seen[pr.Number] = true
+			all = append(all, pr)
+		}
+	}
+	for _, pr := range reviewed {
+		if !seen[pr.Number] {
+			seen[pr.Number] = true
+			all = append(all, pr)
+		}
+	}
+
+	return all, nil
+}
+
+func getTeamMembers(team string) ([]string, error) {
+	// team is in format "org/team-name"
+	cmd := exec.Command("gh", "api", fmt.Sprintf("/orgs/%s/members", team), "--jq", ".[].login")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var members []string
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if line != "" {
+			members = append(members, line)
+		}
+	}
+	return members, nil
+}
+
+func fetchTeamReviewed(members []string) ([]PR, error) {
+	if len(members) == 0 {
+		return nil, nil
+	}
+
+	// Build query: reviewed-by:member1 OR reviewed-by:member2 ...
+	var reviewedParts []string
+	for _, m := range members {
+		reviewedParts = append(reviewedParts, fmt.Sprintf("reviewed-by:%s", m))
+	}
+	reviewedClause := strings.Join(reviewedParts, " OR ")
+
+	query := fmt.Sprintf(`
+query {
+  search(query: "is:pr is:open (%s)", type: ISSUE, first: 100) {
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        isDraft
+        createdAt
+        author { login }
+        repository {
+          name
+          owner { login }
+        }
+        labels(first: 10) {
+          nodes { name }
+        }
+      }
+    }
+  }
+}
+`, reviewedClause)
+
 	return fetchPRs(query, false)
 }
 

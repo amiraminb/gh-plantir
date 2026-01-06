@@ -52,8 +52,11 @@ plantir list --repo=auth
 plantir list --type=feature
 plantir list --type=dependabot
 
-# Show PRs assigned to a team
+# Show all PRs for a team (pending + reviewed)
 plantir list --team=org/team-name
+
+# Show only PRs waiting for a team's review
+plantir list --team=org/team-name -p
 
 # Show only stale PRs (older than N days)
 plantir list --stale=7
