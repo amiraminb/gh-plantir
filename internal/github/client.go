@@ -212,7 +212,13 @@ func FetchTeamAll(team string) ([]PR, error) {
 
 func getTeamMembers(team string) ([]string, error) {
 	// team is in format "org/team-name"
-	cmd := exec.Command("gh", "api", fmt.Sprintf("/orgs/%s/members", team), "--jq", ".[].login")
+	parts := strings.SplitN(team, "/", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid team format: expected org/team, got %s", team)
+	}
+	org, teamSlug := parts[0], parts[1]
+
+	cmd := exec.Command("gh", "api", fmt.Sprintf("/orgs/%s/teams/%s/members", org, teamSlug), "--jq", ".[].login")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
