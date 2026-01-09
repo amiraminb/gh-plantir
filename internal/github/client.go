@@ -287,17 +287,31 @@ func FetchAll() ([]PR, error) {
 		return nil, err
 	}
 
+	mentions, err := FetchMentions()
+	if err != nil {
+		return nil, err
+	}
+
 	seen := make(map[int]bool)
 	var all []PR
 	for _, pr := range pending {
 		if !seen[pr.Number] {
 			seen[pr.Number] = true
+			pr.Status = "pending"
 			all = append(all, pr)
 		}
 	}
 	for _, pr := range reviewed {
 		if !seen[pr.Number] {
 			seen[pr.Number] = true
+			pr.Status = "reviewed"
+			all = append(all, pr)
+		}
+	}
+	for _, pr := range mentions {
+		if !seen[pr.Number] {
+			seen[pr.Number] = true
+			pr.Status = "mentioned"
 			all = append(all, pr)
 		}
 	}

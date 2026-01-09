@@ -24,15 +24,24 @@ func age(t time.Time) string {
 
 func Table(prs []github.PR) {
 	hasActivity := false
+	hasStatus := false
 	for _, pr := range prs {
 		if pr.Activity != "" {
 			hasActivity = true
-			break
+		}
+		if pr.Status != "" {
+			hasStatus = true
 		}
 	}
 
 	table := tablewriter.NewTable(os.Stdout)
-	if hasActivity {
+
+	// Build header based on available fields
+	if hasStatus && hasActivity {
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Status", "Activity")
+	} else if hasStatus {
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Status")
+	} else if hasActivity {
 		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Activity")
 	} else {
 		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type")
@@ -44,30 +53,32 @@ func Table(prs []github.PR) {
 			title = title[:42] + "..."
 		}
 
+		row := []string{
+			pr.Repo,
+			"#" + strconv.Itoa(pr.Number),
+			title,
+			pr.Author,
+			age(pr.CreatedAt),
+			pr.Type(),
+		}
+
+		if hasStatus {
+			status := pr.Status
+			if status == "" {
+				status = "-"
+			}
+			row = append(row, status)
+		}
+
 		if hasActivity {
 			activity := pr.Activity
 			if activity == "" {
 				activity = "-"
 			}
-			table.Append([]string{
-				pr.Repo,
-				"#" + strconv.Itoa(pr.Number),
-				title,
-				pr.Author,
-				age(pr.CreatedAt),
-				pr.Type(),
-				activity,
-			})
-		} else {
-			table.Append([]string{
-				pr.Repo,
-				"#" + strconv.Itoa(pr.Number),
-				title,
-				pr.Author,
-				age(pr.CreatedAt),
-				pr.Type(),
-			})
+			row = append(row, activity)
 		}
+
+		table.Append(row)
 	}
 
 	table.Render()

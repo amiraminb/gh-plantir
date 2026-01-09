@@ -13,6 +13,7 @@ type PR struct {
 	IsDraft   bool      `json:"isDraft"`
 	Labels    []string  `json:"labels"`
 	Activity  string    `json:"activity,omitempty"`
+	Status    string    `json:"status,omitempty"` // "pending" or "reviewed"
 }
 
 func (p PR) Type() string {
