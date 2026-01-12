@@ -16,11 +16,3 @@ type PR struct {
 	Status    string    `json:"status,omitempty"` // "pending" or "reviewed"
 }
 
-func (p PR) Type() string {
-	switch p.Author {
-	case "dependabot":
-		return "dependabot"
-	default:
-		return "feature"
-	}
-}

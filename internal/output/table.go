@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	// Type colors
+	// Author colors
 	dependabotColor = color.New(color.FgBlue).SprintFunc()
-	featureColor    = color.New(color.FgMagenta).SprintFunc()
+	humanColor      = color.New(color.FgMagenta).SprintFunc()
 
 	// Age colors
 	freshColor = color.New(color.FgHiCyan).SprintFunc() // < 1 day
@@ -49,12 +49,12 @@ func age(t time.Time) string {
 	}
 }
 
-func coloredType(prType string) string {
-	switch prType {
+func coloredAuthor(author string) string {
+	switch author {
 	case "dependabot":
-		return dependabotColor(prType)
+		return dependabotColor(author)
 	default:
-		return featureColor(prType)
+		return humanColor(author)
 	}
 }
 
@@ -85,13 +85,13 @@ func Table(prs []github.PR) {
 
 	// Build header based on available fields
 	if hasStatus && hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Status", "Activity")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "Status", "Activity")
 	} else if hasStatus {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Status")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "Status")
 	} else if hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type", "Activity")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "Activity")
 	} else {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Type")
+		table.Header("Repo", "PR#", "Title", "Author", "Age")
 	}
 
 	for _, pr := range prs {
@@ -104,9 +104,8 @@ func Table(prs []github.PR) {
 			pr.Repo,
 			"#" + strconv.Itoa(pr.Number),
 			title,
-			pr.Author,
+			coloredAuthor(pr.Author),
 			age(pr.CreatedAt),
-			coloredType(pr.Type()),
 		}
 
 		if hasStatus {

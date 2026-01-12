@@ -70,13 +70,10 @@ plantir list --limit=0  # unlimited
 plantir list --json
 
 # Combine filters
-plantir list --repo=auth --type=feature --stale=3
+plantir list --repo=auth
 
 # Open a PR in your browser
 plantir open 1234
-
-# Show summary statistics
-plantir stats
 
 # AI-powered PR review (requires AWS SSO login)
 plantir review 1234
