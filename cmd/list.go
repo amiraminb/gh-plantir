@@ -70,7 +70,12 @@ var listCmd = &cobra.Command{
 		})
 
 		sort.Slice(prs, func(i, j int) bool {
-			return prs[i].CreatedAt.After(prs[j].CreatedAt)
+			// Primary sort: by age (newest first)
+			if !prs[i].CreatedAt.Equal(prs[j].CreatedAt) {
+				return prs[i].CreatedAt.After(prs[j].CreatedAt)
+			}
+			// Secondary sort: features before dependabot
+			return prs[i].Type() == "feature" && prs[j].Type() != "feature"
 		})
 
 		totalCount := len(prs)

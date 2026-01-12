@@ -6,20 +6,67 @@ import (
 	"time"
 
 	"github.com/amiraminb/plantir/internal/github"
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+)
+
+var (
+	// Type colors
+	dependabotColor = color.New(color.FgBlue).SprintFunc()
+	featureColor    = color.New(color.FgMagenta).SprintFunc()
+
+	// Age colors
+	freshColor = color.New(color.FgHiCyan).SprintFunc() // < 1 day
+	staleColor = color.New(color.FgYellow).SprintFunc() // 1-7 days
+	oldColor   = color.New(color.FgRed).SprintFunc()    // > 7 days
+
+	// Status colors
+	reviewedColor = color.New(color.FgHiCyan).SprintFunc()
+	pendingColor  = color.New(color.FgYellow).SprintFunc()
 )
 
 func age(t time.Time) string {
 	d := time.Since(t)
+	days := int(d.Hours() / 24)
 
+	var ageStr string
 	if d.Hours() >= 24 {
-		days := int(d.Hours() / 24)
-		return strconv.Itoa(days) + "d"
+		ageStr = strconv.Itoa(days) + "d"
+	} else if d.Hours() >= 1 {
+		ageStr = strconv.Itoa(int(d.Hours())) + "h"
+	} else {
+		ageStr = strconv.Itoa(int(d.Minutes())) + "m"
 	}
-	if d.Hours() >= 1 {
-		return strconv.Itoa(int(d.Hours())) + "h"
+
+	// Color based on age
+	switch {
+	case days < 1:
+		return freshColor(ageStr)
+	case days <= 7:
+		return staleColor(ageStr)
+	default:
+		return oldColor(ageStr)
 	}
-	return strconv.Itoa(int(d.Minutes())) + "m"
+}
+
+func coloredType(prType string) string {
+	switch prType {
+	case "dependabot":
+		return dependabotColor(prType)
+	default:
+		return featureColor(prType)
+	}
+}
+
+func coloredStatus(status string) string {
+	switch status {
+	case "reviewed":
+		return reviewedColor(status)
+	case "pending":
+		return pendingColor(status)
+	default:
+		return status
+	}
 }
 
 func Table(prs []github.PR) {
@@ -59,7 +106,7 @@ func Table(prs []github.PR) {
 			title,
 			pr.Author,
 			age(pr.CreatedAt),
-			pr.Type(),
+			coloredType(pr.Type()),
 		}
 
 		if hasStatus {
@@ -67,7 +114,7 @@ func Table(prs []github.PR) {
 			if status == "" {
 				status = "-"
 			}
-			row = append(row, status)
+			row = append(row, coloredStatus(status))
 		}
 
 		if hasActivity {
