@@ -66,7 +66,8 @@ var listCmd = &cobra.Command{
 		}
 
 		prs = filter.Apply(prs, filter.Options{
-			Repo: repoFlag,
+			Repo:          repoFlag,
+			ExcludeDrafts: pendingFlag,
 		})
 
 		sort.Slice(prs, func(i, j int) bool {

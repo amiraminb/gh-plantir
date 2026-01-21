@@ -7,7 +7,8 @@ import (
 )
 
 type Options struct {
-	Repo string
+	Repo          string
+	ExcludeDrafts bool
 }
 
 func Apply(prs []github.PR, opts Options) []github.PR {
@@ -15,6 +16,10 @@ func Apply(prs []github.PR, opts Options) []github.PR {
 
 	for _, pr := range prs {
 		if opts.Repo != "" && !strings.Contains(strings.ToLower(pr.Repo), strings.ToLower(opts.Repo)) {
+			continue
+		}
+
+		if opts.ExcludeDrafts && pr.IsDraft {
 			continue
 		}
 

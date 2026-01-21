@@ -1,5 +1,5 @@
 BINARY_NAME := plantir
-INSTALL_DIR := $(HOME)/local/bin
+INSTALL_DIR := $(HOME)/.local/bin
 COMPLETION_DIR := $(HOME)/.zsh/completions
 
 .PHONY: build install completion clean all
