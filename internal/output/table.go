@@ -23,6 +23,10 @@ var (
 	// Status colors
 	reviewedColor = color.New(color.FgHiCyan).SprintFunc()
 	pendingColor  = color.New(color.FgYellow).SprintFunc()
+
+	// State colors (open vs draft)
+	openColor  = color.New(color.FgGreen).SprintFunc()
+	draftColor = color.New(color.FgHiBlack).SprintFunc()
 )
 
 func age(t time.Time) string {
@@ -69,6 +73,13 @@ func coloredStatus(status string) string {
 	}
 }
 
+func coloredState(isDraft bool) string {
+	if isDraft {
+		return draftColor("draft")
+	}
+	return openColor("open")
+}
+
 func Table(prs []github.PR) {
 	hasActivity := false
 	hasStatus := false
@@ -85,13 +96,13 @@ func Table(prs []github.PR) {
 
 	// Build header based on available fields
 	if hasStatus && hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Status", "Activity")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Status", "Activity")
 	} else if hasStatus {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Status")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Status")
 	} else if hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "Activity")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Activity")
 	} else {
-		table.Header("Repo", "PR#", "Title", "Author", "Age")
+		table.Header("Repo", "PR#", "Title", "Author", "Age", "State")
 	}
 
 	for _, pr := range prs {
@@ -106,6 +117,7 @@ func Table(prs []github.PR) {
 			title,
 			coloredAuthor(pr.Author),
 			age(pr.CreatedAt),
+			coloredState(pr.IsDraft),
 		}
 
 		if hasStatus {
