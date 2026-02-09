@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/amiraminb/plantir/cmd"
+	"github.com/amiraminb/gh-plantir/cmd"
 )
 
 func main() {

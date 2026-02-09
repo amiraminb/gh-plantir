@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/amiraminb/plantir/internal/filter"
-	"github.com/amiraminb/plantir/internal/github"
-	"github.com/amiraminb/plantir/internal/output"
+	"github.com/amiraminb/gh-plantir/internal/filter"
+	"github.com/amiraminb/gh-plantir/internal/github"
+	"github.com/amiraminb/gh-plantir/internal/output"
 	"github.com/spf13/cobra"
 )
 

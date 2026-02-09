@@ -1,4 +1,4 @@
-module github.com/amiraminb/plantir
+module github.com/amiraminb/gh-plantir
 
 go 1.25.3
 

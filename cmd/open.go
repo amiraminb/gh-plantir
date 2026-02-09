@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/amiraminb/plantir/internal/github"
+	"github.com/amiraminb/gh-plantir/internal/github"
 	"github.com/cli/go-gh/v2/pkg/browser"
 	"github.com/spf13/cobra"
 )

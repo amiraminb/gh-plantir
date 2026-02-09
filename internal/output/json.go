@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/amiraminb/plantir/internal/github"
+	"github.com/amiraminb/gh-plantir/internal/github"
 )
 
 func JSON(prs []github.PR) {

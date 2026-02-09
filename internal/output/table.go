@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/amiraminb/plantir/internal/github"
+	"github.com/amiraminb/gh-plantir/internal/github"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 )

@@ -3,7 +3,7 @@ package filter
 import (
 	"strings"
 
-	"github.com/amiraminb/plantir/internal/github"
+	"github.com/amiraminb/gh-plantir/internal/github"
 )
 
 type Options struct {
