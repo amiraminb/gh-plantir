@@ -1,11 +1,11 @@
 package github
 
 import (
-	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/cli/go-gh/v2/pkg/api"
 )
 
 const reviewRequestQuery = `
@@ -132,39 +132,133 @@ query {
 }
 `
 
-type graphQLResponse struct {
-	Data struct {
-		Search struct {
-			Nodes []struct {
-				Number    int    `json:"number"`
-				Title     string `json:"title"`
-				URL       string `json:"url"`
-				IsDraft   bool   `json:"isDraft"`
-				CreatedAt string `json:"createdAt"`
-				Author    struct {
+type searchResponse struct {
+	Search struct {
+		Nodes []struct {
+			Number    int    `json:"number"`
+			Title     string `json:"title"`
+			URL       string `json:"url"`
+			IsDraft   bool   `json:"isDraft"`
+			CreatedAt string `json:"createdAt"`
+			Author    struct {
+				Login string `json:"login"`
+			} `json:"author"`
+			Repository struct {
+				Name  string `json:"name"`
+				Owner struct {
 					Login string `json:"login"`
-				} `json:"author"`
-				Repository struct {
-					Name  string `json:"name"`
-					Owner struct {
+				} `json:"owner"`
+			} `json:"repository"`
+			Labels struct {
+				Nodes []struct {
+					Name string `json:"name"`
+				} `json:"nodes"`
+			} `json:"labels"`
+			ReviewRequests struct {
+				Nodes []struct {
+					RequestedReviewer struct {
 						Login string `json:"login"`
-					} `json:"owner"`
-				} `json:"repository"`
-				Labels struct {
-					Nodes []struct {
-						Name string `json:"name"`
-					} `json:"nodes"`
-				} `json:"labels"`
-				ReviewRequests struct {
-					Nodes []struct {
-						RequestedReviewer struct {
-							Login string `json:"login"`
-						} `json:"requestedReviewer"`
-					} `json:"nodes"`
-				} `json:"reviewRequests"`
-			} `json:"nodes"`
-		} `json:"search"`
-	} `json:"data"`
+					} `json:"requestedReviewer"`
+				} `json:"nodes"`
+			} `json:"reviewRequests"`
+		} `json:"nodes"`
+	} `json:"search"`
+}
+
+type reviewedSearchResponse struct {
+	Search struct {
+		Nodes []struct {
+			Number    int    `json:"number"`
+			Title     string `json:"title"`
+			URL       string `json:"url"`
+			IsDraft   bool   `json:"isDraft"`
+			CreatedAt string `json:"createdAt"`
+			Author    struct {
+				Login string `json:"login"`
+			} `json:"author"`
+			Repository struct {
+				Name  string `json:"name"`
+				Owner struct {
+					Login string `json:"login"`
+				} `json:"owner"`
+			} `json:"repository"`
+			Labels struct {
+				Nodes []struct {
+					Name string `json:"name"`
+				} `json:"nodes"`
+			} `json:"labels"`
+			Reviews struct {
+				Nodes []struct {
+					Author struct {
+						Login string `json:"login"`
+					} `json:"author"`
+					SubmittedAt string `json:"submittedAt"`
+				} `json:"nodes"`
+			} `json:"reviews"`
+			Commits struct {
+				Nodes []struct {
+					Commit struct {
+						CommittedDate string `json:"committedDate"`
+					} `json:"commit"`
+				} `json:"nodes"`
+			} `json:"commits"`
+			Comments struct {
+				Nodes []struct {
+					CreatedAt string `json:"createdAt"`
+				} `json:"nodes"`
+			} `json:"comments"`
+		} `json:"nodes"`
+	} `json:"search"`
+}
+
+func graphqlQuery(query string, resp interface{}) error {
+	client, err := api.DefaultGraphQLClient()
+	if err != nil {
+		return fmt.Errorf("failed to create GraphQL client: %w", err)
+	}
+	return client.Do(query, nil, resp)
+}
+
+func getCurrentUser() (string, error) {
+	client, err := api.DefaultRESTClient()
+	if err != nil {
+		return "", err
+	}
+	var user struct {
+		Login string `json:"login"`
+	}
+	err = client.Get("user", &user)
+	if err != nil {
+		return "", err
+	}
+	return user.Login, nil
+}
+
+func getTeamMembers(team string) ([]string, error) {
+	parts := strings.SplitN(team, "/", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid team format: expected org/team, got %s", team)
+	}
+	org, teamSlug := parts[0], parts[1]
+
+	client, err := api.DefaultRESTClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var members []struct {
+		Login string `json:"login"`
+	}
+	err = client.Get(fmt.Sprintf("orgs/%s/teams/%s/members", org, teamSlug), &members)
+	if err != nil {
+		return nil, err
+	}
+
+	var logins []string
+	for _, m := range members {
+		logins = append(logins, m.Login)
+	}
+	return logins, nil
 }
 
 func FetchReviewRequests() ([]PR, error) {
@@ -174,6 +268,10 @@ func FetchReviewRequests() ([]PR, error) {
 func FetchTeamReviewRequests(team string) ([]PR, error) {
 	query := teamReviewRequestQuery(team)
 	return fetchPRs(query, false)
+}
+
+func FetchMentions() ([]PR, error) {
+	return fetchPRs(mentionsQuery, false)
 }
 
 func FetchTeamAll(team string) ([]PR, error) {
@@ -210,35 +308,11 @@ func FetchTeamAll(team string) ([]PR, error) {
 	return all, nil
 }
 
-func getTeamMembers(team string) ([]string, error) {
-	// team is in format "org/team-name"
-	parts := strings.SplitN(team, "/", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid team format: expected org/team, got %s", team)
-	}
-	org, teamSlug := parts[0], parts[1]
-
-	cmd := exec.Command("gh", "api", fmt.Sprintf("/orgs/%s/teams/%s/members", org, teamSlug), "--jq", ".[].login")
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	var members []string
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		if line != "" {
-			members = append(members, line)
-		}
-	}
-	return members, nil
-}
-
 func fetchTeamReviewed(members []string) ([]PR, error) {
 	if len(members) == 0 {
 		return nil, nil
 	}
 
-	// Build query: reviewed-by:member1 OR reviewed-by:member2 ...
 	var reviewedParts []string
 	for _, m := range members {
 		reviewedParts = append(reviewedParts, fmt.Sprintf("reviewed-by:%s", m))
@@ -270,10 +344,6 @@ query {
 `, reviewedClause)
 
 	return fetchPRs(query, false)
-}
-
-func FetchMentions() ([]PR, error) {
-	return fetchPRs(mentionsQuery, false)
 }
 
 func FetchAll() ([]PR, error) {
@@ -325,19 +395,13 @@ func FetchReviewed() ([]PR, error) {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	cmd := exec.Command("gh", "api", "graphql", "-f", fmt.Sprintf("query=%s", reviewedQuery))
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to call gh api: %w", err)
-	}
-
-	var resp reviewedResponse
-	if err := json.Unmarshal(output, &resp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+	var resp reviewedSearchResponse
+	if err := graphqlQuery(reviewedQuery, &resp); err != nil {
+		return nil, fmt.Errorf("failed to query GitHub: %w", err)
 	}
 
 	var prs []PR
-	for _, node := range resp.Data.Search.Nodes {
+	for _, node := range resp.Search.Nodes {
 		var lastReviewTime time.Time
 		for _, review := range node.Reviews.Nodes {
 			if review.Author.Login == currentUser {
@@ -366,14 +430,14 @@ func FetchReviewed() ([]PR, error) {
 
 		activity := ""
 		if newCommits > 0 || newComments > 0 {
-			parts := []string{}
+			var parts []string
 			if newCommits > 0 {
 				parts = append(parts, fmt.Sprintf("%d commits", newCommits))
 			}
 			if newComments > 0 {
 				parts = append(parts, fmt.Sprintf("%d comments", newComments))
 			}
-			activity = fmt.Sprintf("%s", joinStrings(parts, ", "))
+			activity = strings.Join(parts, ", ")
 		}
 
 		labels := make([]string, len(node.Labels.Nodes))
@@ -400,74 +464,6 @@ func FetchReviewed() ([]PR, error) {
 	return prs, nil
 }
 
-func joinStrings(strs []string, sep string) string {
-	result := ""
-	for i, s := range strs {
-		if i > 0 {
-			result += sep
-		}
-		result += s
-	}
-	return result
-}
-
-type reviewedResponse struct {
-	Data struct {
-		Search struct {
-			Nodes []struct {
-				Number    int    `json:"number"`
-				Title     string `json:"title"`
-				URL       string `json:"url"`
-				IsDraft   bool   `json:"isDraft"`
-				CreatedAt string `json:"createdAt"`
-				Author    struct {
-					Login string `json:"login"`
-				} `json:"author"`
-				Repository struct {
-					Name  string `json:"name"`
-					Owner struct {
-						Login string `json:"login"`
-					} `json:"owner"`
-				} `json:"repository"`
-				Labels struct {
-					Nodes []struct {
-						Name string `json:"name"`
-					} `json:"nodes"`
-				} `json:"labels"`
-				Reviews struct {
-					Nodes []struct {
-						Author struct {
-							Login string `json:"login"`
-						} `json:"author"`
-						SubmittedAt string `json:"submittedAt"`
-					} `json:"nodes"`
-				} `json:"reviews"`
-				Commits struct {
-					Nodes []struct {
-						Commit struct {
-							CommittedDate string `json:"committedDate"`
-						} `json:"commit"`
-					} `json:"nodes"`
-				} `json:"commits"`
-				Comments struct {
-					Nodes []struct {
-						CreatedAt string `json:"createdAt"`
-					} `json:"nodes"`
-				} `json:"comments"`
-			} `json:"nodes"`
-		} `json:"search"`
-	} `json:"data"`
-}
-
-func getCurrentUser() (string, error) {
-	cmd := exec.Command("gh", "api", "user", "--jq", ".login")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(output[:len(output)-1]), nil
-}
-
 func fetchPRs(query string, filterDirectReviewer bool) ([]PR, error) {
 	var currentUser string
 	if filterDirectReviewer {
@@ -478,19 +474,13 @@ func fetchPRs(query string, filterDirectReviewer bool) ([]PR, error) {
 		}
 	}
 
-	cmd := exec.Command("gh", "api", "graphql", "-f", fmt.Sprintf("query=%s", query))
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to call gh api: %w", err)
-	}
-
-	var resp graphQLResponse
-	if err := json.Unmarshal(output, &resp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+	var resp searchResponse
+	if err := graphqlQuery(query, &resp); err != nil {
+		return nil, fmt.Errorf("failed to query GitHub: %w", err)
 	}
 
 	var prs []PR
-	for _, node := range resp.Data.Search.Nodes {
+	for _, node := range resp.Search.Nodes {
 		if filterDirectReviewer {
 			isDirectReviewer := false
 			for _, rr := range node.ReviewRequests.Nodes {

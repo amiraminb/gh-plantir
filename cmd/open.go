@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 	"strconv"
 
 	"github.com/amiraminb/plantir/internal/github"
+	"github.com/cli/go-gh/v2/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,10 @@ var openCmd = &cobra.Command{
 		for _, pr := range prs {
 			if pr.Number == prNumber {
 				fmt.Printf("Opening %s#%d in browser...\n", pr.Repo, pr.Number)
-				exec.Command("open", pr.URL).Start()
+				b := browser.New("", os.Stdout, os.Stderr)
+				if err := b.Browse(pr.URL); err != nil {
+					fmt.Printf("Error opening browser: %v\n", err)
+				}
 				return
 			}
 		}
