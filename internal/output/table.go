@@ -2,6 +2,7 @@ package output
 
 import (
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -11,6 +12,13 @@ import (
 )
 
 var (
+	// Merged date colors
+	mergedColor = color.New(color.FgHiCyan).SprintFunc()
+
+	// Changes colors
+	additionsColor = color.New(color.FgGreen).SprintFunc()
+	deletionsColor = color.New(color.FgRed).SprintFunc()
+
 	// Author colors
 	dependabotColor = color.New(color.FgBlue).SprintFunc()
 	humanColor      = color.New(color.FgMagenta).SprintFunc()
@@ -134,6 +142,37 @@ func Table(prs []github.PR) {
 				activity = "-"
 			}
 			row = append(row, activity)
+		}
+
+		table.Append(row)
+	}
+
+	table.Render()
+}
+
+func MergedTable(prs []github.MergedPR) {
+	sort.Slice(prs, func(i, j int) bool {
+		return prs[i].Repo < prs[j].Repo
+	})
+
+	table := tablewriter.NewTable(os.Stdout)
+	table.Header("Repo", "PR#", "Title", "Author", "Merged", "Changes")
+
+	for _, pr := range prs {
+		title := pr.Title
+		if len(title) > 45 {
+			title = title[:42] + "..."
+		}
+
+		changes := additionsColor("+"+strconv.Itoa(pr.Additions)) + " " + deletionsColor("-"+strconv.Itoa(pr.Deletions))
+
+		row := []string{
+			pr.Repo,
+			"#" + strconv.Itoa(pr.Number),
+			title,
+			coloredAuthor(pr.Author),
+			mergedColor(age(pr.MergedAt)),
+			changes,
 		}
 
 		table.Append(row)
