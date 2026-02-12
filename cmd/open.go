@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var openTeamFlag string
+
 var openCmd = &cobra.Command{
 	Use:   "open <PR#>",
 	Short: "Open a PR in your browser",
@@ -22,7 +24,12 @@ var openCmd = &cobra.Command{
 			return
 		}
 
-		prs, err := github.FetchAll()
+		var prs []github.PR
+		if openTeamFlag != "" {
+			prs, err = github.FetchTeamAll(openTeamFlag)
+		} else {
+			prs, err = github.FetchAll()
+		}
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
@@ -45,4 +52,6 @@ var openCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(openCmd)
+
+	openCmd.Flags().StringVar(&openTeamFlag, "team", "", "Search within a team's PRs (format: org/team)")
 }
