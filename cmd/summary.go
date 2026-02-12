@@ -9,6 +9,7 @@ import (
 	"github.com/amiraminb/gh-plantir/internal/bedrock"
 	"github.com/amiraminb/gh-plantir/internal/config"
 	"github.com/amiraminb/gh-plantir/internal/github"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -73,11 +74,28 @@ Examples:
 		}
 
 		if summaryListFlag {
-			fmt.Println()
+			prNum := color.New(color.FgCyan).SprintFunc()
+			prTitle := color.New(color.FgWhite).SprintFunc()
+			prAuthor := color.New(color.FgMagenta).SprintFunc()
+			repoName := color.New(color.FgYellow, color.Bold).SprintFunc()
+
+			grouped := make(map[string][]github.MergedPR)
+			var repos []string
 			for _, pr := range prs {
-				fmt.Printf("  %s/%s #%d  %s  (@%s, merged %s)\n",
-					pr.Owner, pr.Repo, pr.Number, pr.Title, pr.Author,
-					pr.MergedAt.Format("2006-01-02"))
+				key := pr.Owner + "/" + pr.Repo
+				if _, exists := grouped[key]; !exists {
+					repos = append(repos, key)
+				}
+				grouped[key] = append(grouped[key], pr)
+			}
+			for _, repo := range repos {
+				fmt.Printf("\n%s\n", repoName(repo))
+				for _, pr := range grouped[repo] {
+					fmt.Printf("  %s  %s  %s\n",
+						prNum(fmt.Sprintf("#%-6d", pr.Number)),
+						prTitle(pr.Title),
+						prAuthor(fmt.Sprintf("(@%s)", pr.Author)))
+				}
 			}
 			return
 		}
