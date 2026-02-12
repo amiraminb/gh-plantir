@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -14,13 +13,9 @@ import (
 )
 
 var (
-	summaryTeamFlag    string
-	summaryTimeFlag    string
-	summaryProfileFlag string
-	summaryRegionFlag  string
-	summaryModelFlag   string
-	summaryJSONFlag    bool
-	summaryListFlag    bool
+	summaryTeamFlag string
+	summaryTimeFlag string
+	summaryListFlag bool
 )
 
 var summaryCmd = &cobra.Command{
@@ -32,8 +27,6 @@ then uses AWS Bedrock (Claude) to produce a human-readable summary grouped by re
 Examples:
   gh plantir summary --team kohofinancial/nomads --date 2026-02-11
   gh plantir summary --team kohofinancial/nomads --date 2026-02-01..2026-02-11
-  gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --profile my-aws-profile
-  gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --json
   gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if summaryTeamFlag == "" {
@@ -50,16 +43,6 @@ Examples:
 			fmt.Printf("Error: %v\n", err)
 			return
 		}
-
-		cfg, err := config.Load()
-		if err != nil {
-			fmt.Printf("Warning: could not load config: %v\n", err)
-			cfg = &config.Config{}
-		}
-
-		profile := resolve(summaryProfileFlag, cfg.Profile, "")
-		region := resolve(summaryRegionFlag, cfg.Region, bedrock.DefaultRegion)
-		model := resolve(summaryModelFlag, cfg.Model, bedrock.DefaultModel)
 
 		fmt.Printf("Fetching merged PRs for team %s (%s to %s)...\n", summaryTeamFlag, startDate, endDate)
 		prs, err := github.FetchMergedPRsForTeam(summaryTeamFlag, startDate, endDate)
@@ -100,18 +83,18 @@ Examples:
 			return
 		}
 
-		if summaryJSONFlag {
-			data, err := json.MarshalIndent(prs, "", "  ")
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				return
-			}
-			fmt.Println(string(data))
+		cfg, err := config.Load()
+		if err != nil {
+			fmt.Printf("Error loading config: %v\n", err)
+			return
+		}
+		if cfg.Profile == "" || cfg.Region == "" || cfg.Model == "" {
+			fmt.Println("AWS Bedrock is not fully configured. Run 'gh plantir config' to set your profile, region, and model.")
 			return
 		}
 
 		fmt.Println("Generating summary...")
-		client, err := bedrock.NewClient(profile, region, model)
+		client, err := bedrock.NewClient(cfg.Profile, cfg.Region, cfg.Model)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
@@ -160,24 +143,10 @@ func validateDate(s string) error {
 	return nil
 }
 
-func resolve(flag, configVal, defaultVal string) string {
-	if flag != "" {
-		return flag
-	}
-	if configVal != "" {
-		return configVal
-	}
-	return defaultVal
-}
-
 func init() {
 	rootCmd.AddCommand(summaryCmd)
 
 	summaryCmd.Flags().StringVarP(&summaryTeamFlag, "team", "t", "", "Team to summarize (format: org/team)")
 	summaryCmd.Flags().StringVarP(&summaryTimeFlag, "date", "d", "", "Date or range (YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD)")
-	summaryCmd.Flags().StringVarP(&summaryProfileFlag, "profile", "p", "", "AWS named profile (overrides config)")
-	summaryCmd.Flags().StringVarP(&summaryRegionFlag, "region", "r", "", "AWS region (overrides config)")
-	summaryCmd.Flags().StringVarP(&summaryModelFlag, "model", "m", "", "Bedrock model ID (overrides config)")
-	summaryCmd.Flags().BoolVarP(&summaryJSONFlag, "json", "j", false, "Output raw PR data as JSON instead of AI summary")
 	summaryCmd.Flags().BoolVarP(&summaryListFlag, "list", "l", false, "List all fetched PRs instead of summarizing")
 }

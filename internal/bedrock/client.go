@@ -11,24 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 )
 
-const (
-	DefaultModel  = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-	DefaultRegion = "ca-central-1"
-)
-
 type Client struct {
 	runtime *bedrockruntime.Client
 	model   string
 }
 
 func NewClient(profile, region, model string) (*Client, error) {
-	if region == "" {
-		region = DefaultRegion
-	}
-	if model == "" {
-		model = DefaultModel
-	}
-
 	var opts []func(*awsconfig.LoadOptions) error
 	opts = append(opts, awsconfig.WithRegion(region))
 	if profile != "" {

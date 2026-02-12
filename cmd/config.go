@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/amiraminb/gh-plantir/internal/bedrock"
 	"github.com/amiraminb/gh-plantir/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -25,8 +24,8 @@ var configCmd = &cobra.Command{
 		scanner := bufio.NewScanner(os.Stdin)
 
 		cfg.Profile = promptField(scanner, "AWS Profile", cfg.Profile, "")
-		cfg.Region = promptField(scanner, "AWS Region", cfg.Region, bedrock.DefaultRegion)
-		cfg.Model = promptField(scanner, "Bedrock Model ID", cfg.Model, bedrock.DefaultModel)
+		cfg.Region = promptField(scanner, "AWS Region", cfg.Region, "")
+		cfg.Model = promptField(scanner, "Bedrock Model ID", cfg.Model, "")
 
 		if err := config.Save(cfg); err != nil {
 			fmt.Printf("Error saving config: %v\n", err)
