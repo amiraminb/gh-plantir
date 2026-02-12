@@ -246,17 +246,26 @@ func getTeamMembers(team string) ([]string, error) {
 		return nil, err
 	}
 
-	var members []struct {
-		Login string `json:"login"`
-	}
-	err = client.Get(fmt.Sprintf("orgs/%s/teams/%s/members", org, teamSlug), &members)
-	if err != nil {
-		return nil, err
-	}
-
 	var logins []string
-	for _, m := range members {
-		logins = append(logins, m.Login)
+	page := 1
+	for {
+		var members []struct {
+			Login string `json:"login"`
+		}
+		err = client.Get(fmt.Sprintf("orgs/%s/teams/%s/members?per_page=100&page=%d", org, teamSlug, page), &members)
+		if err != nil {
+			return nil, err
+		}
+		if len(members) == 0 {
+			break
+		}
+		for _, m := range members {
+			logins = append(logins, m.Login)
+		}
+		if len(members) < 100 {
+			break
+		}
+		page++
 	}
 	return logins, nil
 }
@@ -313,15 +322,12 @@ func fetchTeamReviewed(members []string) ([]PR, error) {
 		return nil, nil
 	}
 
-	var reviewedParts []string
+	seen := make(map[int]bool)
+	var all []PR
 	for _, m := range members {
-		reviewedParts = append(reviewedParts, fmt.Sprintf("reviewed-by:%s", m))
-	}
-	reviewedClause := strings.Join(reviewedParts, " OR ")
-
-	query := fmt.Sprintf(`
+		query := fmt.Sprintf(`
 query {
-  search(query: "is:pr is:open (%s)", type: ISSUE, first: 100) {
+  search(query: "is:pr is:open reviewed-by:%s", type: ISSUE, first: 100) {
     nodes {
       ... on PullRequest {
         number
@@ -341,9 +347,19 @@ query {
     }
   }
 }
-`, reviewedClause)
-
-	return fetchPRs(query, false)
+`, m)
+		prs, err := fetchPRs(query, false)
+		if err != nil {
+			return nil, err
+		}
+		for _, pr := range prs {
+			if !seen[pr.Number] {
+				seen[pr.Number] = true
+				all = append(all, pr)
+			}
+		}
+	}
+	return all, nil
 }
 
 func FetchAll() ([]PR, error) {
