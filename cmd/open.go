@@ -53,5 +53,5 @@ var openCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(openCmd)
 
-	openCmd.Flags().StringVar(&openTeamFlag, "team", "", "Search within a team's PRs (format: org/team)")
+	openCmd.Flags().StringVarP(&openTeamFlag, "team", "t", "", "Search within a team's PRs (format: org/team)")
 }

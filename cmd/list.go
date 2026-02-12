@@ -119,5 +119,5 @@ func init() {
 	listCmd.Flags().BoolVarP(&pendingFlag, "pending", "p", false, "Show only PRs waiting for your review")
 	listCmd.Flags().BoolVarP(&reviewedFlag, "reviewed", "r", false, "Show only PRs you've already reviewed")
 	listCmd.Flags().BoolVarP(&mentionsFlag, "mentions", "m", false, "Show PRs where you're mentioned or commented")
-	listCmd.Flags().StringVar(&teamFlag, "team", "", "Show PRs for a team (format: org/team). Use with -p for pending only")
+	listCmd.Flags().StringVarP(&teamFlag, "team", "t", "", "Show PRs for a team (format: org/team). Use with -p for pending only")
 }
