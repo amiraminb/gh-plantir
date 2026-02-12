@@ -51,7 +51,7 @@ Examples:
 			return
 		}
 
-		fmt.Printf("Found %d merged PRs.\n", len(prs))
+		fmt.Printf("Found %d merged PRs (excluding dependabot).\n", len(prs))
 		if len(prs) == 0 {
 			return
 		}
