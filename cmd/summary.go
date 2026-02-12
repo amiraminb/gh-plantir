@@ -29,18 +29,18 @@ var summaryCmd = &cobra.Command{
 then uses AWS Bedrock (Claude) to produce a human-readable summary grouped by repository.
 
 Examples:
-  gh plantir summary --team kohofinancial/nomads --time 2026-02-11
-  gh plantir summary --team kohofinancial/nomads --time 2026-02-01..2026-02-11
-  gh plantir summary --team kohofinancial/nomads --time 2026-02-11 --profile my-aws-profile
-  gh plantir summary --team kohofinancial/nomads --time 2026-02-11 --json
-  gh plantir summary --team kohofinancial/nomads --time 2026-02-11 --list`,
+  gh plantir summary --team kohofinancial/nomads --date 2026-02-11
+  gh plantir summary --team kohofinancial/nomads --date 2026-02-01..2026-02-11
+  gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --profile my-aws-profile
+  gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --json
+  gh plantir summary --team kohofinancial/nomads --date 2026-02-11 --list`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if summaryTeamFlag == "" {
 			fmt.Println("Error: --team is required (format: org/team)")
 			return
 		}
 		if summaryTimeFlag == "" {
-			fmt.Println("Error: --time is required (format: YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD)")
+			fmt.Println("Error: --date is required (format: YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD)")
 			return
 		}
 
@@ -155,11 +155,11 @@ func resolve(flag, configVal, defaultVal string) string {
 func init() {
 	rootCmd.AddCommand(summaryCmd)
 
-	summaryCmd.Flags().StringVar(&summaryTeamFlag, "team", "", "Team to summarize (format: org/team)")
-	summaryCmd.Flags().StringVar(&summaryTimeFlag, "time", "", "Date or range (YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD)")
-	summaryCmd.Flags().StringVar(&summaryProfileFlag, "profile", "", "AWS named profile (overrides config)")
-	summaryCmd.Flags().StringVar(&summaryRegionFlag, "region", "", "AWS region (overrides config)")
-	summaryCmd.Flags().StringVar(&summaryModelFlag, "model", "", "Bedrock model ID (overrides config)")
-	summaryCmd.Flags().BoolVar(&summaryJSONFlag, "json", false, "Output raw PR data as JSON instead of AI summary")
-	summaryCmd.Flags().BoolVar(&summaryListFlag, "list", false, "List all fetched PRs before summarizing")
+	summaryCmd.Flags().StringVarP(&summaryTeamFlag, "team", "t", "", "Team to summarize (format: org/team)")
+	summaryCmd.Flags().StringVarP(&summaryTimeFlag, "date", "d", "", "Date or range (YYYY-MM-DD or YYYY-MM-DD..YYYY-MM-DD)")
+	summaryCmd.Flags().StringVarP(&summaryProfileFlag, "profile", "p", "", "AWS named profile (overrides config)")
+	summaryCmd.Flags().StringVarP(&summaryRegionFlag, "region", "r", "", "AWS region (overrides config)")
+	summaryCmd.Flags().StringVarP(&summaryModelFlag, "model", "m", "", "Bedrock model ID (overrides config)")
+	summaryCmd.Flags().BoolVarP(&summaryJSONFlag, "json", "j", false, "Output raw PR data as JSON instead of AI summary")
+	summaryCmd.Flags().BoolVarP(&summaryListFlag, "list", "l", false, "List all fetched PRs instead of summarizing")
 }
