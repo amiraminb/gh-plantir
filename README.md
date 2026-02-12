@@ -1,12 +1,13 @@
 # Plantir
 
-A `gh` CLI extension to manage GitHub pull requests where you're requested as a reviewer.
+A `gh` CLI extension to manage GitHub pull requests where you're requested as a reviewer, and summarize merged PRs for your team using AI.
 
 > Named after the Palantír - the seeing stones from Lord of the Rings.
 
 ## Requirements
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated
+- AWS credentials with Bedrock access (only needed for the `summary` command)
 
 ### Setting up GitHub CLI
 
@@ -69,4 +70,22 @@ gh plantir list --json
 
 # Open a PR in your browser
 gh plantir open 1234
+```
+
+### Summary
+
+Fetch merged PRs reviewed by a team and generate an AI-powered summary using AWS Bedrock (Claude). Dependabot PRs are excluded.
+
+```bash
+# Configure AWS settings (required before first use)
+gh plantir config
+
+# Summarize merged PRs for a team on a specific date
+gh plantir summary -t org/team-name -d 2026-02-11
+
+# Summarize a date range
+gh plantir summary -t org/team-name -d 2026-02-01..2026-02-11
+
+# List fetched PRs without generating a summary
+gh plantir summary -t org/team-name -d 2026-02-11 -l
 ```
