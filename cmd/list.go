@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/amiraminb/gh-plantir/internal/filter"
 	"github.com/amiraminb/gh-plantir/internal/github"
@@ -70,14 +69,7 @@ var listCmd = &cobra.Command{
 			ExcludeDrafts: pendingFlag,
 		})
 
-		sort.Slice(prs, func(i, j int) bool {
-			// Primary sort: by age (newest first)
-			if !prs[i].CreatedAt.Equal(prs[j].CreatedAt) {
-				return prs[i].CreatedAt.After(prs[j].CreatedAt)
-			}
-			// Secondary sort: human authors before dependabot
-			return prs[i].Author != "dependabot" && prs[j].Author == "dependabot"
-		})
+		sortPRs(prs, currentListMode(pendingFlag, reviewedFlag, mentionsFlag))
 
 		totalCount := len(prs)
 
