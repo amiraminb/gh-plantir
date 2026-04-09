@@ -15,4 +15,3 @@ type PR struct {
 	Activity  string    `json:"activity,omitempty"`
 	Status    string    `json:"status,omitempty"` // "pending" or "reviewed"
 }
-
