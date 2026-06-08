@@ -3,6 +3,7 @@ package output
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/amiraminb/gh-plantir/internal/github"
@@ -27,6 +28,12 @@ var (
 	// State colors (open vs draft)
 	openColor  = color.New(color.FgGreen).SprintFunc()
 	draftColor = color.New(color.FgHiBlack).SprintFunc()
+
+	// CI colors (rolled-up check state)
+	ciPassColor    = color.New(color.FgGreen).SprintFunc()
+	ciFailColor    = color.New(color.FgRed).SprintFunc()
+	ciPendingColor = color.New(color.FgYellow).SprintFunc()
+	ciNoneColor    = color.New(color.FgHiBlack).SprintFunc()
 )
 
 func age(t time.Time) string {
@@ -80,6 +87,19 @@ func coloredState(isDraft bool) string {
 	return openColor("open")
 }
 
+func coloredCI(ci string) string {
+	switch strings.ToUpper(ci) {
+	case "SUCCESS":
+		return ciPassColor("✓ pass")
+	case "FAILURE", "ERROR":
+		return ciFailColor("✗ fail")
+	case "PENDING", "EXPECTED":
+		return ciPendingColor("● pending")
+	default:
+		return ciNoneColor("- none")
+	}
+}
+
 func Table(prs []github.PR) {
 	hasActivity := false
 	hasStatus := false
@@ -92,18 +112,16 @@ func Table(prs []github.PR) {
 		}
 	}
 
-	table := tablewriter.NewTable(os.Stdout)
-
-	// Build header based on available fields
-	if hasStatus && hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Status", "Activity")
-	} else if hasStatus {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Status")
-	} else if hasActivity {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "State", "Activity")
-	} else {
-		table.Header("Repo", "PR#", "Title", "Author", "Age", "State")
+	header := []any{"Repo", "PR#", "Title", "Author", "Age", "State", "CI"}
+	if hasStatus {
+		header = append(header, "Status")
 	}
+	if hasActivity {
+		header = append(header, "Activity")
+	}
+
+	table := tablewriter.NewTable(os.Stdout)
+	table.Header(header...)
 
 	for _, pr := range prs {
 		title := pr.Title
@@ -118,6 +136,7 @@ func Table(prs []github.PR) {
 			coloredAuthor(pr.Author),
 			age(pr.CreatedAt),
 			coloredState(pr.IsDraft),
+			coloredCI(pr.CI),
 		}
 
 		if hasStatus {
