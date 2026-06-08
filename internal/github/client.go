@@ -26,6 +26,13 @@ query {
         labels(first: 10) {
           nodes { name }
         }
+        statusCheckRollup: commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup { state }
+            }
+          }
+        }
         reviewRequests(first: 20) {
           nodes {
             requestedReviewer {
@@ -57,6 +64,13 @@ query {
         }
         labels(first: 10) {
           nodes { name }
+        }
+        statusCheckRollup: commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup { state }
+            }
+          }
         }
         reviews(last: 100) {
           nodes {
@@ -101,6 +115,13 @@ query {
         labels(first: 10) {
           nodes { name }
         }
+        statusCheckRollup: commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup { state }
+            }
+          }
+        }
       }
     }
   }
@@ -125,6 +146,13 @@ query {
         }
         labels(first: 10) {
           nodes { name }
+        }
+        statusCheckRollup: commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup { state }
+            }
+          }
         }
       }
     }
@@ -161,8 +189,26 @@ type searchResponse struct {
 					} `json:"requestedReviewer"`
 				} `json:"nodes"`
 			} `json:"reviewRequests"`
+			StatusCheckRollup statusCheckRollup `json:"statusCheckRollup"`
 		} `json:"nodes"`
 	} `json:"search"`
+}
+
+type statusCheckRollup struct {
+	Nodes []struct {
+		Commit struct {
+			StatusCheckRollup struct {
+				State string `json:"state"`
+			} `json:"statusCheckRollup"`
+		} `json:"commit"`
+	} `json:"nodes"`
+}
+
+func (s statusCheckRollup) state() string {
+	if len(s.Nodes) == 0 {
+		return ""
+	}
+	return s.Nodes[0].Commit.StatusCheckRollup.State
 }
 
 type reviewedSearchResponse struct {
@@ -207,6 +253,7 @@ type reviewedSearchResponse struct {
 					CreatedAt string `json:"createdAt"`
 				} `json:"nodes"`
 			} `json:"comments"`
+			StatusCheckRollup statusCheckRollup `json:"statusCheckRollup"`
 		} `json:"nodes"`
 	} `json:"search"`
 }
@@ -343,6 +390,13 @@ query {
         labels(first: 10) {
           nodes { name }
         }
+        statusCheckRollup: commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup { state }
+            }
+          }
+        }
       }
     }
   }
@@ -474,6 +528,7 @@ func FetchReviewed() ([]PR, error) {
 			Labels:    labels,
 			CreatedAt: createdAt,
 			Activity:  activity,
+			CI:        node.StatusCheckRollup.state(),
 		})
 	}
 
@@ -527,6 +582,7 @@ func fetchPRs(query string, filterDirectReviewer bool) ([]PR, error) {
 			IsDraft:   node.IsDraft,
 			Labels:    labels,
 			CreatedAt: createdAt,
+			CI:        node.StatusCheckRollup.state(),
 		})
 	}
 

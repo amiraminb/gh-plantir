@@ -14,4 +14,5 @@ type PR struct {
 	Labels    []string  `json:"labels"`
 	Activity  string    `json:"activity,omitempty"`
 	Status    string    `json:"status,omitempty"` // "pending", "reviewed", or "mentioned"
+	CI        string    `json:"ci,omitempty"`     // rolled-up check state: SUCCESS, FAILURE, ERROR, PENDING, EXPECTED, or "" (no checks)
 }
